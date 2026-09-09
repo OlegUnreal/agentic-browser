@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 460" width="760" height="460">
+  <defs>
+    <style>
+      .box { fill:#0f172a; stroke:#fb7185; stroke-width:2; rx:10; }
+      .lbl { fill:#e2e8f0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:14px; }
+      .sub { fill:#94a3b8; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; }
+      .arr { fill:none; stroke:#fbbf24; stroke-width:2.5; marker-end:url(#arr); }
+      .dot { fill:#fbbf24; }
+      .pulse { animation: p 2.7s infinite; }
+      @keyframes p { 0%{opacity:.2} 50%{opacity:1} 100%{opacity:.2} }
+    </style>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#fbbf24"/>
+    </marker>
+  </defs>
+  <rect width="760" height="460" fill="#020617"/>
+  <text x="24" y="34" class="lbl" font-size="16">agentic-browser · observe → act loop</text>
+
+  <rect class="box" x="40" y="90" width="130" height="70"/>
+  <text x="58" y="118" class="lbl">goal + URL</text>
+  <text x="58" y="138" class="sub">user intent</text>
+
+  <rect class="box" x="210" y="90" width="130" height="70"/>
+  <text x="228" y="118" class="lbl">browser</text>
+  <text x="228" y="138" class="sub">Playwright snapshot</text>
+
+  <rect class="box" x="380" y="90" width="130" height="70"/>
+  <text x="398" y="118" class="lbl">vision</text>
+  <text x="398" y="138" class="sub">structured elements</text>
+
+  <rect class="box" x="550" y="90" width="130" height="70"/>
+  <text x="568" y="118" class="lbl">LLM brain</text>
+  <text x="568" y="138" class="sub">tool call</text>
+
+  <rect class="box" x="380" y="230" width="130" height="70"/>
+  <text x="398" y="258" class="lbl">guard</text>
+  <text x="398" y="278" class="sub">domain + rate limit</text>
+
+  <rect class="box" x="210" y="230" width="130" height="70"/>
+  <text x="228" y="258" class="lbl">execute</text>
+  <text x="228" y="278" class="sub">click / type / scroll</text>
+
+  <rect class="box" x="40" y="230" width="130" height="70"/>
+  <text x="58" y="258" class="lbl">done?</text>
+  <text x="58" y="278" class="sub">terminate loop</text>
+
+  <path class="arr pulse" d="M170 125 L210 125"/>
+  <path class="arr pulse" d="M340 125 L380 125" style="animation-delay:.45s"/>
+  <path class="arr pulse" d="M510 125 L550 125" style="animation-delay:.9s"/>
+  <path class="arr pulse" d="M615 160 L615 230" style="animation-delay:1.35s"/>
+  <path class="arr pulse" d="M380 265 L340 265" style="animation-delay:1.8s"/>
+  <path class="arr pulse" d="M210 265 L170 265 L170 160" style="animation-delay:2.25s"/>
+
+  <circle class="dot pulse" cx="170" cy="125" r="4"/>
+  <circle class="dot pulse" cx="340" cy="125" r="4" style="animation-delay:.45s"/>
+  <circle class="dot pulse" cx="510" cy="125" r="4" style="animation-delay:.9s"/>
+  <circle class="dot pulse" cx="615" cy="230" r="4" style="animation-delay:1.35s"/>
+  <circle class="dot pulse" cx="340" cy="265" r="4" style="animation-delay:1.8s"/>
+  <circle class="dot pulse" cx="170" cy="160" r="4" style="animation-delay:2.25s"/>
+
+  <text x="24" y="440" class="sub">guard blocks off-allowlist domains before any action executes</text>
+</svg>
