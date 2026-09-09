@@ -1,6 +1,7 @@
 from agentic.agent import run, _execute
 from agentic.browser import PageState
 from agentic.guard import Guard
+from agentic.vision import _parse_elements
 
 
 class FakeDriver:
@@ -43,3 +44,14 @@ def test_survives_llm_error():
         raise RuntimeError("llm down")
     steps = run("goal", "https://example.com", boom, max_steps=2)
     assert any(s.action == "error" for s in steps)
+
+
+def test_parse_elements_tolerates_fences():
+    raw = "```json\n[{\"selector\": \"#a\", \"label\": \"Go\", \"type\": \"button\"}]\n```"
+    els = _parse_elements(raw)
+    assert els and els[0]["selector"] == "#a"
+
+
+def test_parse_elements_empty():
+    assert _parse_elements("") == []
+    assert _parse_elements(None) == []

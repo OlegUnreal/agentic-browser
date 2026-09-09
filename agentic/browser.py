@@ -1,6 +1,7 @@
 """Playwright wrapper exposed as discrete tools."""
 from __future__ import annotations
 
+import base64
 from dataclasses import dataclass
 
 from playwright.sync_api import sync_playwright, Page, Browser
@@ -27,22 +28,21 @@ class BrowserDriver:
 
     def goto(self, url: str) -> PageState:
         assert self._page
-        self._page.goto(url, wait_until="domcontentloaded")
+        self._page.goto(url, wait_until="domcontentloaded", timeout=15000)
         return self.snapshot()
 
     def click(self, selector: str) -> PageState:
         assert self._page
-        self._page.click(selector)
+        self._page.click(selector, timeout=10000)
         return self.snapshot()
 
     def type(self, selector: str, text: str) -> PageState:
         assert self._page
-        self._page.fill(selector, text)
+        self._page.fill(selector, text, timeout=10000)
         return self.snapshot()
 
     def snapshot(self) -> PageState:
         assert self._page
-        import base64
         png = self._page.screenshot(type="png")
         return PageState(
             self._page.url,
@@ -52,7 +52,9 @@ class BrowserDriver:
         )
 
     def close(self) -> None:
-        if self._browser:
-            self._browser.close()
-        if self._pw:
-            self._pw.stop()
+        try:
+            if self._browser:
+                self._browser.close()
+        finally:
+            if self._pw:
+                self._pw.stop()
