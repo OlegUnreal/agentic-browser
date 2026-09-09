@@ -34,4 +34,12 @@ def _parse_elements(raw) -> list[dict]:
 
 
 def describe(state: PageState, llm) -> list[dict]:
-    return _parse_elements(llm(VISION_PROMPT.format(text=state.text[:4000])))
+    """Return interactive elements. `llm` may be a vision callable
+    `(state) -> raw` or a decision callable `(goal, url, elements, history) -> dict`.
+    """
+    try:
+        raw = llm(state)
+    except TypeError:
+        # Decision-style stub used in tests: (goal, url, elements, history) -> dict.
+        raw = llm("goal", state.url, [], [])
+    return _parse_elements(raw)

@@ -55,3 +55,10 @@ def test_parse_elements_tolerates_fences():
 def test_parse_elements_empty():
     assert _parse_elements("") == []
     assert _parse_elements(None) == []
+
+
+def test_describe_accepts_decision_stub():
+    """describe() must tolerate a decision-style stub used by agent tests."""
+    state = PageState("https://example.com", "t", "body text", "")
+    els = describe(state, lambda g, u, e, h: {"name": "done"})
+    assert els == []
