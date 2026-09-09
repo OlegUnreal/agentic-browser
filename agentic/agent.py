@@ -15,42 +15,54 @@ class Step:
     result: str
 
 
-def run(goal: str, start_url: str, llm, max_steps: int = 10) -> list[Step]:
+def _execute(driver: BrowserDriver, decision: dict, guard: Guard) -> PageState:
+    name = decision.get("name", "").lower()
+    args = decision.get("args") or {}
+    if name == "goto":
+        url = args.get("url", "")
+        if guard.allow_url(url):
+            return driver.goto(url)
+        return PageState(url, "blocked", "domain not allowed", "")
+    if name == "click":
+        return driver.click(args.get("selector", ""))
+    if name == "type":
+        return driver.type(args.get("selector", ""), args.get("text", ""))
+    if name == "done":
+        return driver.snapshot()
+    return driver.snapshot()
+
+
+def run(goal: str, start_url: str, llm, max_steps: int = 10,
+        allowed_domains: set[str] | None = None) -> list[Step]:
     driver = BrowserDriver()
-    guard = Guard(allowed_domains={"example.com"})
-    driver.start()
+    guard = Guard(allowed_domains or {"example.com"})
     history: list[Step] = []
     try:
+        driver.start()
         if not guard.allow_url(start_url):
             return history
         state = driver.goto(start_url)
         for n in range(1, max_steps + 1):
             elements = describe(state, llm)
-            decision = llm(
-                f"Goal: {goal}\nPage: {state.url}\nElements: {elements}\n"
-                f"Choose one action: goto(url) | click(selector) | type(selector, text) | DONE",
-                history,
-            )
-            if decision.upper().startswith("DONE"):
+            try:
+                decision = llm(goal, state.url, elements, history)
+            except Exception as exc:  # noqa: BLE001
+                history.append(Step(n, "error", str(exc)))
+                continue
+            if not isinstance(decision, dict):
+                decision = {"name": str(decision), "args": {}}
+            name = str(decision.get("name", "")).lower()
+            if name == "done":
                 history.append(Step(n, "DONE", "goal reached"))
                 break
             if not guard.allow_action():
-                history.append(Step(n, decision, "rate-limited"))
+                history.append(Step(n, name or "action", "rate-limited"))
                 continue
-            state = _execute(driver, decision, guard)
-            history.append(Step(n, decision, state.url))
+            try:
+                state = _execute(driver, decision, guard)
+            except Exception as exc:  # noqa: BLE001
+                state = PageState(state.url, state.title, f"action failed: {exc}", state.screenshot_b64)
+            history.append(Step(n, name or "action", state.url))
     finally:
         driver.close()
     return history
-
-
-def _execute(driver: BrowserDriver, decision: str, guard: Guard) -> PageState:
-    # Minimal parser: real version uses structured tool calls.
-    if decision.startswith("goto"):
-        url = decision.split("(", 1)[1].rstrip(")").strip("\"'")
-        if guard.allow_url(url):
-            return driver.goto(url)
-    if decision.startswith("click"):
-        sel = decision.split("(", 1)[1].rstrip(")").strip("\"'")
-        return driver.click(sel)
-    return driver.snapshot()

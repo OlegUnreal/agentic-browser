@@ -51,18 +51,23 @@ def make_llm(model: str = "gpt-4o-mini") -> Callable:
     from openai import OpenAI
     client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-    def decide(goal: str, url: str, elements: str, history: list) -> dict:
+    def decide(goal: str, url: str, elements, history: list) -> dict:
         hist = "\n".join(f"- {h.action}: {h.result}" for h in history[-5:])
+        elem_txt = json.dumps(elements) if not isinstance(elements, str) else elements
         resp = client.chat.completions.create(
             model=model,
             messages=[
                 {"role": "system", "content": "You control a browser. Pick exactly one tool call."},
-                {"role": "user", "content": f"Goal: {goal}\nURL: {url}\nElements: {elements}\nHistory:\n{hist}"},
+                {"role": "user", "content": f"Goal: {goal}\nURL: {url}\nElements: {elem_txt}\nHistory:\n{hist}"},
             ],
             tools=TOOLS,
             tool_choice="required",
+            timeout=30,
         )
-        tc = resp.choices[0].message.tool_calls[0]
+        msg = resp.choices[0].message
+        if not msg.tool_calls:
+            return {"name": "done", "args": {}}
+        tc = msg.tool_calls[0]
         args = json.loads(tc.function.arguments or "{}")
         return {"name": tc.function.name, "args": args}
 
