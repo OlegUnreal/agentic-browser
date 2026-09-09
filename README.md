@@ -43,7 +43,7 @@ It combines three hard things that most "agent" demos skip:
 2. **Multimodal perception** — the model sees both the DOM text and a structured element list, so it can target by role/text rather than brittle CSS selectors.
 3. **A safety policy** — domain allow-list and rate limit, so a hallucinating model can't `goto https://evil.com` or click itself into an infinite loop.
 
-## Quick start
+## How to run
 
 ```bash
 git clone https://github.com/OlegUnreal/agentic-browser.git
@@ -66,6 +66,24 @@ python -m agentic "Find the pricing page" "https://example.com"
 pytest -q
 ```
 
+Windows notes:
+
+- Activate with `.venv\Scripts\activate`.
+- `playwright install chromium` downloads a bundled browser — no system Chrome/Edge required, but the first run needs network access.
+- On Windows the bundled Chromium runs headless by default; pass `--headed` (or set `AGENT_HEADED=1`) to watch it.
+- If `playwright install` fails behind a proxy, set `PLAYWRIGHT_DOWNLOAD_HOST` to a mirror.
+
+## Libraries used and why
+
+| Library | Version | Why it is here |
+|---|---|---|
+| `openai` | `>=1.40` | Tool-calling client. The agent emits structured actions (`goto`, `click`, `type`, `scroll`, `done`) via the function-calling API, so the model can't emit free-text garbage that the parser has to guess at. |
+| `playwright` | `>=1.40` | Real browser automation. Auto-waits, role-based selectors, and a bundled Chromium mean tests don't depend on whatever Chrome the interviewer happens to have installed. |
+| `python-dotenv` | `>=1.0` | Loads `.env` for the API key and the domain allow-list. |
+| `pytest` | `>=8.0` | (dev) Tests for the agent loop, the safety guard, and vision parsing — with a fake browser so CI stays green without downloading Chromium. |
+
+Why Playwright over Selenium: Playwright's selector engine is built around accessibility roles and text, which maps directly onto what an LLM can reason about. Selenium's CSS/XPath-first model forces brittle selectors that break on every layout change — exactly the failure mode this agent is meant to avoid.
+
 ## Configuration
 
 | Variable | Default | Meaning |
@@ -76,6 +94,7 @@ pytest -q
 | `AGENT_ALLOWED_DOMAINS` | `example.com` | comma-separated allow-list |
 | `AGENT_MAX_ACTIONS_PER_MIN` | `30` | rate limit |
 | `AGENT_TIMEOUT` | `30` | per-LLM-call timeout (seconds) |
+| `AGENT_HEADED` | `0` | `1` to show the browser window |
 
 ## Testing
 
