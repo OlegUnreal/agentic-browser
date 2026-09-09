@@ -1,7 +1,7 @@
 from agentic.agent import run, _execute
 from agentic.browser import PageState
 from agentic.guard import Guard
-from agentic.vision import _parse_elements
+from agentic.vision import _parse_elements, describe
 
 
 class FakeDriver:
@@ -61,4 +61,10 @@ def test_describe_accepts_decision_stub():
     """describe() must tolerate a decision-style stub used by agent tests."""
     state = PageState("https://example.com", "t", "body text", "")
     els = describe(state, lambda g, u, e, h: {"name": "done"})
+    assert els == []
+
+
+def test_describe_survives_crashing_stub():
+    state = PageState("https://example.com", "t", "body text", "")
+    els = describe(state, lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
     assert els == []

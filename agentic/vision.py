@@ -40,6 +40,11 @@ def describe(state: PageState, llm) -> list[dict]:
     try:
         raw = llm(state)
     except TypeError:
-        # Decision-style stub used in tests: (goal, url, elements, history) -> dict.
-        raw = llm("goal", state.url, [], [])
+        # Decision-style stub: (goal, url, elements, history) -> dict.
+        try:
+            raw = llm("goal", state.url, [], [])
+        except Exception:  # noqa: BLE001 - tolerate a crashing stub
+            return []
+    except Exception:  # noqa: BLE001
+        return []
     return _parse_elements(raw)
