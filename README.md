@@ -1,5 +1,7 @@
 # agentic-browser
 
+[![CI](https://github.com/OlegUnreal/agentic-browser/actions/workflows/ci.yml/badge.svg)](https://github.com/OlegUnreal/agentic-browser/actions/workflows/ci.yml)
+
 An LLM agent that drives a real browser: reads the page (text + screenshot), decides which tool to call (click, type, scroll), observes the result, repeats — with a safety policy that most agent demos skip.
 
 ## The idea
