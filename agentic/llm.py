@@ -41,12 +41,34 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "scroll",
+            "description": (
+                "Scroll the page. With a selector, brings that element into view; "
+                "without one, moves the viewport by `amount` pixels (positive = down the document). "
+                "Use it when the target is not in the retrieved element list yet."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "selector": {"type": "string", "description": "Optional CSS selector to bring into view"},
+                    "amount": {"type": "integer", "description": "Vertical delta in pixels, default 500"},
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "done",
             "description": "Goal reached, stop",
             "parameters": {"type": "object", "properties": {}},
         },
     },
 ]
+
+#: Names the model is allowed to emit. Kept in sync with `guard.KNOWN_TOOLS`.
+TOOL_NAMES = tuple(schema["function"]["name"] for schema in TOOLS)
 
 
 def _parse_tool_call(msg) -> dict:
@@ -62,27 +84,74 @@ def _parse_tool_call(msg) -> dict:
     return {"name": tc.function.name, "args": args}
 
 
-def make_llm(model: str | None = None) -> Callable:
+def _serialise_elements(elements) -> str:
+    """Render the retrieved element list as compact JSON for the prompt.
+
+    Accepts plain dicts (legacy call sites) as well as the selection objects the
+    perception layer returns, which expose `as_dict()` / carry `.element`.
+    """
+    if isinstance(elements, str):
+        return elements
+    rows: list[dict] = []
+    for item in elements or []:
+        if isinstance(item, dict):
+            rows.append(item)
+            continue
+        for attr in ("as_dict", "to_dict"):
+            method = getattr(item, attr, None)
+            if callable(method):
+                payload = method()
+                if isinstance(payload, dict):
+                    rows.append(payload)
+                break
+        else:
+            inner = getattr(item, "element", None)
+            rows.append(inner if isinstance(inner, dict) else {"label": str(item)})
+    return json.dumps(rows, default=str, separators=(",", ":"))
+
+
+def make_llm(model: str | None = None, tools: list[dict] | None = None) -> Callable:
+    """Build the decision callable used by `agent.run`.
+
+    Raises `RuntimeError` when no API key is configured: callers that want an
+    offline run should use `agentic.offline.make_offline_llm` instead.
+    """
     if not SETTINGS.has_key:
         raise RuntimeError("OPENAI_API_KEY not set")
     from openai import OpenAI, APIError, RateLimitError, APITimeoutError
 
     m = model or SETTINGS.model
+    tool_schemas = tools if tools is not None else TOOLS
     client = OpenAI(api_key=SETTINGS.openai_api_key, timeout=SETTINGS.timeout)
 
-    def decide(goal: str, url: str, elements, history: list) -> dict:
-        hist = "\n".join(f"- {h.action}: {h.result}" for h in history[-5:])
-        elem_txt = json.dumps(elements) if not isinstance(elements, str) else elements
+    def decide(goal: str, url: str, elements, history: list, context: dict | None = None) -> dict:
+        hist = "\n".join(f"- {h.action}: {h.result}" for h in list(history)[-5:])
+        elem_txt = _serialise_elements(elements)
+        prompt = (
+            f"Goal: {goal}\nURL: {url}\n"
+            f"Retrieved elements (most relevant first):\n{elem_txt}\n"
+            f"History:\n{hist}"
+        )
+        if context:
+            prompt += f"\nAgent state: {json.dumps(context, default=str, separators=(',', ':'))}"
         last: Exception | None = None
         for attempt in range(3):
             try:
                 resp = client.chat.completions.create(
                     model=m,
                     messages=[
-                        {"role": "system", "content": "You control a browser. Pick exactly one tool call."},
-                        {"role": "user", "content": f"Goal: {goal}\nURL: {url}\nElements: {elem_txt}\nHistory:\n{hist}"},
+                        {
+                            "role": "system",
+                            "content": (
+                                "You control a browser. Pick exactly one tool call. "
+                                "Always target an element from the retrieved list by its selector. "
+                                "If the same state was already visited and the last action did not help, "
+                                "change strategy instead of repeating it."
+                            ),
+                        },
+                        {"role": "user", "content": prompt},
                     ],
-                    tools=TOOLS,
+                    tools=tool_schemas,
                     tool_choice="required",
                     timeout=SETTINGS.timeout,
                 )

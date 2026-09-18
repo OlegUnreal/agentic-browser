@@ -1,0 +1,25 @@
+{
+  "kind": "logreg",
+  "features": [
+    "text_match",
+    "log_label_len",
+    "css_specificity",
+    "selector_depth",
+    "role_actionable",
+    "role_button",
+    "role_link",
+    "role_input",
+    "visible",
+    "in_viewport",
+    "norm_doc_order",
+    "norm_position_y",
+    "origin_dom",
+    "origin_attr",
+    "origin_text",
+    "origin_history",
+    "prior_success_rate",
+    "log_prior_attempts",
+    "full_text_match"
+  ],
+  "trained_on": "1344 rows / 177 groups"
+}

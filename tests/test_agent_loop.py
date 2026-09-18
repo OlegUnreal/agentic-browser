@@ -35,14 +35,14 @@ def test_execute_click():
 def test_terminates_on_done():
     def stub(goal, url, elements, history):
         return {"name": "done", "args": {}}
-    steps = run("goal", "https://example.com", stub)
+    steps = run("goal", "https://example.com", stub, driver=FakeDriver())
     assert steps and steps[-1].action == "DONE"
 
 
 def test_survives_llm_error():
     def boom(goal, url, elements, history):
         raise RuntimeError("llm down")
-    steps = run("goal", "https://example.com", boom, max_steps=2)
+    steps = run("goal", "https://example.com", boom, max_steps=2, driver=FakeDriver())
     assert any(s.action == "error" for s in steps)
 
 
