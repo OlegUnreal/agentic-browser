@@ -4,12 +4,12 @@ from __future__ import annotations
 from .agent import run
 
 
-def stub_llm(prompt: str, history=None):
-    if "Elements" in prompt:
-        return [{"selector": "#login", "label": "Login", "type": "button"}]
-    if "Choose one action" in prompt:
-        return "DONE"
-    return []
+def stub_llm(goal: str, url: str, elements: list, history: list, **kwargs):
+    if "Elements" in str(elements):
+        return {"name": "click", "args": {"selector": "#login"}}
+    if history:
+        return {"name": "done", "args": {}}
+    return {"name": "click", "args": {"selector": "#login"}}
 
 
 def main() -> None:
