@@ -132,7 +132,7 @@ Why Playwright over Selenium: Playwright's selector engine is built around acces
 ## Testing
 
 ```bash
-pytest -q
+pytest -q                              # 17 passed
 pytest -v tests/test_agent_loop.py   # observe → act loop + termination
 pytest -v tests/test_guard.py        # domain allow-list + rate limit
 pytest -v tests/test_vision.py       # structured element parsing
@@ -167,3 +167,5 @@ Working agent with real LLM tool-calling, Playwright integration, safety guards,
 ## License
 
 MIT.
+
+*Last updated: 2026-09-19*
